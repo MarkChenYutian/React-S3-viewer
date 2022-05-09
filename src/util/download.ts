@@ -1,9 +1,9 @@
 import { S3Client, GetObjectCommand, GetObjectCommandInput } from "@aws-sdk/client-s3";
 import { isParsedFile } from './fs';
 import { Buffer } from 'buffer';
-// import * as CacheCore from '../util/cache';
 
 import { notification } from 'antd';
+import { getCache, setCache } from './cache';
 
 async function initializeStream(client: S3Client, bucketName: string, key: string) {
     const queryCommand: GetObjectCommandInput = {
@@ -36,10 +36,13 @@ async function initializeStream(client: S3Client, bucketName: string, key: strin
 
 export async function downloadItem(client: S3Client, bucketName: string, file: ParsedFile | undefined | Directory, setErrMsg: Function) {
     if (!isParsedFile(file)) return;
-    const cache_str = sessionStorage.getItem(file.Key);
-    // const cache_str = await CacheCore.ReadCache(file.Key);
+    let cache_str = undefined;
+    try {
+        cache_str = await getCache(file.Key, file.ETag);
+    } catch(e) { console.error(e); }
+    
     let result: Uint8Array | undefined = undefined;
-    if (cache_str === null) {
+    if (cache_str === undefined) {
         notification.info({
             message: "Downloading ...",
             description: "Your file " + file.DisplayName +" is downloading in the background."
@@ -53,18 +56,9 @@ export async function downloadItem(client: S3Client, bucketName: string, file: P
             .then(
                 result => {
                     try {
-                        // CacheCore.WriteCache({
-                        //     fileKey: file.Key,
-                        //     fileName: file.DisplayName,
-                        //     data: Buffer.from(new Uint8Array(result)).toString("base64"),
-                        //     version: file.LastModified === undefined ? new Date() : file.LastModified,
-                        //     sequenceNum: 0
-                        // });
-                        sessionStorage.setItem(file.Key, Buffer.from(new Uint8Array(result)).toString("base64"));
+                        setCache(file.Key, file.ETag, Buffer.from(new Uint8Array(result)).toString("base64"))
                     } catch (error) {
-                        // CacheCore.clearCache(setErrMsg);
-                        // setErrMsg(error);
-                        // setErrMsg("The file is too big to be cached in browser!");
+                        setErrMsg(error);
                         console.warn(error);
                     }
                     notification.success({

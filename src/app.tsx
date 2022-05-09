@@ -10,9 +10,7 @@ import { loadDirectory } from "./util/fs";
 import { drawRows } from "./components/fileEntry";
 import { dirBackRow } from "./components/returnEntry";
 import { goHome, reload } from "./util/interface";
-// import ProgressBar from './components/progress';
 import { notification } from 'antd';
-// import * as CacheCore from './util/cache';
 
 const bucketName = 'yutian-public';
 const region = 'us-east-1';
@@ -52,14 +50,13 @@ function App() {
         setDirectory(newdir);
         loadDirectory(client, bucketName, newdir, setErrMsg, setFiles);
     }
+
     const initializeFiles = (root: Directory) => {
         setFiles(root);
-        // CacheCore.CheckCache(root);
     }
 
     if (files === undefined) {
         loadDirectory(client, bucketName, [], setErrMsg, initializeFiles);
-        // CacheCore.initializeCache();
         return (<p>Loading ...</p>);
     } else {
         return (

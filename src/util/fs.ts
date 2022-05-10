@@ -95,12 +95,6 @@ function fetchAndLoad(
     });
     client.send(listCommand)
         .then((output) => {
-            sessionStorage.setItem("rawFile", 
-                JSON.stringify(
-                    preprocessFiles(output.Contents === undefined ? [] : output.Contents)
-                )
-            );
-
             const fileStruct = parseFileStructure(
                 preprocessFiles(output.Contents === undefined ? [] : output.Contents)
             );
@@ -115,7 +109,6 @@ export function loadDirectory(client: S3Client, bucketName: string, directory: s
     if (cache === null) {
         fetchAndLoad(client, bucketName, directory, setErrMsg, setFiles);
     } else {
-        // console.log("getDirectory", directory, getDirectory(directory, JSON.parse(cache)));
         setFiles(
             getDirectory(directory, JSON.parse(cache))
         );

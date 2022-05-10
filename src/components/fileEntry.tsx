@@ -2,7 +2,7 @@ import { S3Client } from "@aws-sdk/client-s3";
 import { downloadItem } from "../util/download";
 import { isParsedFile } from "../util/fs";
 
-function fileSizeConvert(fileSize: number): string {
+export function fileSizeConvert(fileSize: number): string {
     fileSize /= 1024;
     const postfix = ["KB", "MB", "GB"]
     let ptr = 0;
@@ -29,7 +29,8 @@ function fileDateConvert(file: ParsedFile | Directory) {
     return new Date(file.LastModified).toISOString().split('T')[0].replaceAll('-','/');
 }
 
-export function drawRows(dir: Directory, path: string[], client: S3Client, bucketName: string, setErrMsg: Function, setDirectory: Function):JSX.Element[] {
+export function drawRows(dir: Directory, path: string[], client: S3Client, bucketName: string, 
+                         setErrMsg: Function, setDirectory: Function, setProgress: Function):JSX.Element[] {
     let result = [];
     for (let k in Object.keys(dir)) {
         const obj = dir[Object.keys(dir)[k]];
@@ -39,7 +40,7 @@ export function drawRows(dir: Directory, path: string[], client: S3Client, bucke
         }
         result.push(
             <div className="file-row-container" key={k} onClick={() => {
-                if (isParsedFile(obj)) {downloadItem(client, bucketName, obj, setErrMsg)}
+                if (isParsedFile(obj)) {downloadItem(client, bucketName, obj, setErrMsg, setProgress)}
                 else {
                     setDirectory(newPath);
                 }

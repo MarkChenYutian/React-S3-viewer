@@ -5,7 +5,7 @@ import { Buffer } from 'buffer';
 import { notification } from 'antd';
 import { getCache, setCache } from './cache';
 
-async function initializeStream(client: S3Client, bucketName: string, key: string) {
+async function initializeStream(client: S3Client, bucketName: string, key: string, size: number, setProgress: Function) {
     const queryCommand: GetObjectCommandInput = {
         Key: key, Bucket: bucketName
     };
@@ -18,12 +18,15 @@ async function initializeStream(client: S3Client, bucketName: string, key: strin
     return new ReadableStream(
         {
             start(controller) {
+                let downloaded = 0;
                 function push() {
                     reader.read().then(({done, value}) => {
                         if (done) {
                             controller.close();
                             return;
                         }
+                        downloaded += (value as Uint8Array).length;
+                        setProgress({ currSize: downloaded, allSize: size });
                         controller.enqueue(value);
                         push();
                     })
@@ -34,7 +37,8 @@ async function initializeStream(client: S3Client, bucketName: string, key: strin
     )
 }
 
-export async function downloadItem(client: S3Client, bucketName: string, file: ParsedFile | undefined | Directory, setErrMsg: Function) {
+export async function downloadItem(client: S3Client, bucketName: string, file: ParsedFile | undefined | Directory,
+                                   setErrMsg: Function, setProgress: Function) {
     if (!isParsedFile(file)) return;
     let cache_str = undefined;
     try {
@@ -43,11 +47,12 @@ export async function downloadItem(client: S3Client, bucketName: string, file: P
     
     let result: Uint8Array | undefined = undefined;
     if (cache_str === undefined) {
+        setProgress({currSize: 0, allSize: file.Size});
         notification.info({
             message: "Downloading ...",
             description: "Your file " + file.DisplayName +" is downloading in the background."
         });
-        result = await initializeStream(client, bucketName, file.Key)
+        result = await initializeStream(client, bucketName, file.Key, file.Size, setProgress)
             .then(
                 stream => {
                     return new Response(stream).arrayBuffer();
@@ -61,6 +66,7 @@ export async function downloadItem(client: S3Client, bucketName: string, file: P
                         setErrMsg(error);
                         console.warn(error);
                     }
+                    setProgress({currSize: 0, allSize: 0});
                     notification.success({
                         message: "Downloaded",
                         description: "The file " + file.DisplayName + " is downloaded! Please save it on the pop-up window."

@@ -1,4 +1,5 @@
 import 'antd/lib/notification/style/index.css';
+import 'antd/lib/progress/style/index.css';
 
 import { useState } from "react";
 
@@ -11,6 +12,7 @@ import { drawRows } from "./components/fileEntry";
 import { dirBackRow } from "./components/returnEntry";
 import { goHome, reload } from "./util/interface";
 import { notification } from 'antd';
+import DownloadProgress from './components/progress';
 
 const bucketName = 'yutian-public';
 const region = 'us-east-1';
@@ -37,6 +39,9 @@ function wechatWarning(): JSX.Element | undefined {
 function App() {
     const [files, setFiles] = useState<Directory>();
     const [directory, setDirectory] = useState<string[]>([]);
+    const [progress, setProgress] = useState<DownloadProgress>({
+        currSize: 0, allSize: 0
+    });
 
     const setErrMsg = (e: string) => {
         notification.warning(
@@ -46,6 +51,7 @@ function App() {
             }
         );
     }
+
     const updateDirectory = (newdir: string[]) => {
         setDirectory(newdir);
         loadDirectory(client, bucketName, newdir, setErrMsg, setFiles);
@@ -76,6 +82,7 @@ function App() {
                             onClick={() => {goHome(updateDirectory);}}/>
                     </div>
                 </div>
+                <DownloadProgress currSize={progress.currSize} allSize={progress.allSize} />
                 <div className="file-grid">
                     <div id="head" style={{display: "contents"}}>
                         <div></div>
@@ -85,7 +92,7 @@ function App() {
                     </div>
                     <div style={{display: "contents"}}>
                         {dirBackRow(directory, updateDirectory)}
-                        {drawRows(files, directory, client, bucketName, setErrMsg, updateDirectory)}
+                        {drawRows(files, directory, client, bucketName, setErrMsg, updateDirectory, setProgress)}
                     </div>
                 </div>
             </div>

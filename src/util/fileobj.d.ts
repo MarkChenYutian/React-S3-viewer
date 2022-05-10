@@ -23,3 +23,13 @@ interface Directory {
     [Key: string]: Directory | ParsedFile ;
 }
 
+interface DownloadProgress {
+    currSize: number,
+    allSize: number
+}
+
+interface ProgressController {
+    incr: (value: number, p: DownloadProgress) => void;
+    init: (fileSize: number, p: DownloadProgress) => void;
+    finish: (fileSize: number, p: DownloadProgress) => void;
+}

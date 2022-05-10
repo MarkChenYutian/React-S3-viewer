@@ -1,28 +1,20 @@
-import { Progress } from 'antd';
-import React from 'react';
+import { Progress } from "antd";
 
-class ProgressBar extends React.Component {
-  state = {
-    percent: 0,
-  };
-
-  setPercent = (percent: number) => {
-      this.setState( { percent } );
-  }
-
-  increase = () => {
-    let percent = this.state.percent + 10;
-    if (percent > 100) {
-      percent = 100;
-    }
-    this.setState({ percent });
-  };
-
-  render() {
-    return (
-        <Progress percent={this.state.percent} />
-    );
-  }
+export default function DownloadProgress(props: any) {
+  if (props.allSize === 0) return null;
+  const percent = parseFloat((props.currSize/props.allSize).toFixed(4));
+  return (
+    <>
+      <h3>Download Progress</h3>
+      <Progress
+        percent={percent * 100}
+        status="active"
+        format={(percent, successPercent) => {
+          return percent?.toFixed(2) + "%";
+        }}
+        strokeColor="#ff5100"
+        // trailColor="transparent"
+      />
+    </>
+  )
 }
-
-export default ProgressBar;

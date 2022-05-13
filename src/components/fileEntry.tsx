@@ -30,7 +30,7 @@ function fileDateConvert(file: ParsedFile | Directory) {
 }
 
 export function drawRows(dir: Directory, path: string[], client: S3Client, bucketName: string, 
-                         setErrMsg: Function, setDirectory: Function, setProgress: Function):JSX.Element[] {
+                         setErrMsg: Function, setDirectory: Function, setProgress: Function, stateRef: React.MutableRefObject<DownloadProgress>):JSX.Element[] {
     let result = [];
     for (let k in Object.keys(dir)) {
         const obj = dir[Object.keys(dir)[k]];
@@ -40,7 +40,7 @@ export function drawRows(dir: Directory, path: string[], client: S3Client, bucke
         }
         result.push(
             <div className="file-row-container" key={k} onClick={() => {
-                if (isParsedFile(obj)) {downloadItem(client, bucketName, obj, setErrMsg, setProgress)}
+                if (isParsedFile(obj)) {downloadItem(client, bucketName, obj, setErrMsg, setProgress, stateRef)}
                 else {
                     setDirectory(newPath);
                 }

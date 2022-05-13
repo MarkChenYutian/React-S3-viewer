@@ -5,7 +5,7 @@ import { Buffer } from 'buffer';
 import { notification } from 'antd';
 import { getCache, setCache } from './cache';
 
-async function initializeStream(client: S3Client, bucketName: string, key: string, size: number, setProgress: Function) {
+async function initializeStream(client: S3Client, bucketName: string, key: string, setProgress: Function, stateRef: React.MutableRefObject<DownloadProgress>) {
     const queryCommand: GetObjectCommandInput = {
         Key: key, Bucket: bucketName
     };
@@ -18,18 +18,25 @@ async function initializeStream(client: S3Client, bucketName: string, key: strin
     return new ReadableStream(
         {
             start(controller) {
-                let downloaded = 0;
                 function push() {
-                    reader.read().then(({done, value}) => {
-                        if (done) {
-                            controller.close();
-                            return;
-                        }
-                        downloaded += (value as Uint8Array).length;
-                        setProgress({ currSize: downloaded, allSize: size });
-                        controller.enqueue(value);
-                        push();
-                    })
+                    reader.read()
+                        .then(({ done, value }) => {
+                            if (done) {
+                                controller.close();
+                                return;
+                            }
+                            setProgress({
+                                currSize: stateRef.current.currSize + (value as Uint8Array).length,
+                                allSize: stateRef.current.allSize
+                            });
+                            controller.enqueue(value);
+                            push();
+                        }).catch(
+                            (e) => {
+                                console.log("catched!");
+                                throw e;
+                            }
+                        )
                 }
                 push();
             }
@@ -38,21 +45,24 @@ async function initializeStream(client: S3Client, bucketName: string, key: strin
 }
 
 export async function downloadItem(client: S3Client, bucketName: string, file: ParsedFile | undefined | Directory,
-                                   setErrMsg: Function, setProgress: Function) {
+    setErrMsg: Function, setProgress: Function, stateRef: React.MutableRefObject<DownloadProgress>) {
     if (!isParsedFile(file)) return;
     let cache_str = undefined;
     try {
         cache_str = await getCache(file.Key, file.ETag);
-    } catch(e) { console.error(e); }
-    
+    } catch (e) { console.error(e); }
+
     let result: Uint8Array | undefined = undefined;
     if (cache_str === undefined) {
-        setProgress({currSize: 0, allSize: file.Size});
+        setProgress({
+            currSize: stateRef.current.currSize,
+            allSize: stateRef.current.allSize + file.Size
+        });
         notification.info({
             message: "Downloading ...",
-            description: "Your file " + file.DisplayName +" is downloading in the background."
+            description: "Your file " + file.DisplayName + " is downloading in the background."
         });
-        result = await initializeStream(client, bucketName, file.Key, file.Size, setProgress)
+        result = await initializeStream(client, bucketName, file.Key, setProgress, stateRef)
             .then(
                 stream => {
                     return new Response(stream).arrayBuffer();
@@ -66,7 +76,10 @@ export async function downloadItem(client: S3Client, bucketName: string, file: P
                         setErrMsg(error);
                         console.warn(error);
                     }
-                    setProgress({currSize: 0, allSize: 0});
+                    setProgress({
+                        currSize: stateRef.current.currSize - file.Size,
+                        allSize: stateRef.current.allSize - file.Size
+                    });
                     notification.success({
                         message: "Downloaded",
                         description: "The file " + file.DisplayName + " is downloaded! Please save it on the pop-up window."
@@ -80,6 +93,10 @@ export async function downloadItem(client: S3Client, bucketName: string, file: P
                         message: "Failed to download",
                         description: e + ""
                     });
+                    setProgress({
+                        currSize: stateRef.current.currSize - file.Size,
+                        allSize: stateRef.current.allSize - file.Size
+                    });
                     throw new Error("Failed to download file!");
                 }
             )
@@ -90,10 +107,10 @@ export async function downloadItem(client: S3Client, bucketName: string, file: P
         });
         result = new Uint8Array(Buffer.from(cache_str, "base64"));
     }
-    
+
 
     if (result === undefined) throw new Error("Unable to load file!");
-    
+
     const blob = new Blob([result]);
     const link = document.createElement("a");
     link.href = window.URL.createObjectURL(blob);

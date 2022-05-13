@@ -1,4 +1,5 @@
 import { Progress } from "antd";
+import { fileSizeConvert } from "./fileEntry";
 
 export default function DownloadProgress(props: any) {
   if (props.allSize === 0) return null;
@@ -10,11 +11,12 @@ export default function DownloadProgress(props: any) {
         percent={percent * 100}
         status="active"
         format={(percent, successPercent) => {
-          return percent?.toFixed(2) + "%";
+          return percent?.toFixed(2) + "% | " + fileSizeConvert(props.currSize) + "/" + fileSizeConvert(props.allSize);
         }}
         strokeColor="#ff5100"
         // trailColor="transparent"
       />
+      <hr/>
     </>
   )
 }

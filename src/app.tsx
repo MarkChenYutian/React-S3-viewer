@@ -1,7 +1,8 @@
 import 'antd/lib/notification/style/index.css';
 import 'antd/lib/progress/style/index.css';
 
-import { useState } from "react";
+import useStateRef from 'react-usestateref';
+import { useState } from 'react';
 
 import { S3Client } from "@aws-sdk/client-s3";
 import { CognitoIdentityClient } from "@aws-sdk/client-cognito-identity";
@@ -24,22 +25,10 @@ const client = new S3Client({
     })
 });
 
-function wechatWarning(): JSX.Element | undefined {
-    const ua = navigator.userAgent.toLowerCase().match(/MicroMessenger/i);
-    if (ua !== null && ua[0] === "micromessenger") {
-        return (
-            <div className="notification" style={{display: "none"}}>
-                <h3>Do NOT use the WeChat Browser</h3>
-                <p>Files can't be downloaded under wechat browser. Please use the default browser on your device instead.</p>
-            </div>
-        )
-    }
-}
-
 function App() {
     const [files, setFiles] = useState<Directory>();
     const [directory, setDirectory] = useState<string[]>([]);
-    const [progress, setProgress] = useState<DownloadProgress>({
+    const [progress, setProgress, progressRef] = useStateRef<DownloadProgress>({
         currSize: 0, allSize: 0
     });
 
@@ -66,8 +55,8 @@ function App() {
         return (<p>Loading ...</p>);
     } else {
         return (
-            <div className="React-wrapper">
-                {wechatWarning()}
+            <>
+                <DownloadProgress currSize={progress.currSize} allSize={progress.allSize} />
                 <div style={{display: "flex", flexDirection: "row", justifyContent: "space-between", alignContent: "center"}}>
                     <h2 id="app-path">Shared Files/{directory.join("/")}</h2>
                     <div>
@@ -82,7 +71,6 @@ function App() {
                             onClick={() => {goHome(updateDirectory);}}/>
                     </div>
                 </div>
-                <DownloadProgress currSize={progress.currSize} allSize={progress.allSize} />
                 <div className="file-grid">
                     <div id="head" style={{display: "contents"}}>
                         <div></div>
@@ -92,10 +80,10 @@ function App() {
                     </div>
                     <div style={{display: "contents"}}>
                         {dirBackRow(directory, updateDirectory)}
-                        {drawRows(files, directory, client, bucketName, setErrMsg, updateDirectory, setProgress)}
+                        {drawRows(files, directory, client, bucketName, setErrMsg, updateDirectory, setProgress, progressRef)}
                     </div>
                 </div>
-            </div>
+            </>
         );
     }
 }

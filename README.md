@@ -7,8 +7,8 @@ A react plugin that can show the file system of AWS S3, provides basic download 
 * View AWS S3 Bucket in a File System (directory) structure
 * Download files from S3 Bucket
 * Cache file list & file content through `session storage` and `indexDB`.
+* Show download progress (progress bar)
 
 # TODOs
 
-* Show download progress (progress bar)
 * Integrate markdown and PDF viewer [ ? ]
